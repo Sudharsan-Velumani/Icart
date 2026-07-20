@@ -1,0 +1,645 @@
+---
+export const prerender = false;
+const adminEmail = await Astro.session?.get('adminEmail');
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Management · icart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style is:global>
+    :root {
+      --blue: #174EA6;
+      --blue-dark: #123C82;
+      --red: #A50E0E;
+      --white: #FFFFFF;
+      --ink: #0B1220;
+      --slate: #5B6472;
+      --tint: #EEF3FC;
+      --line: #D8E1F0;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'IBM Plex Sans', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: var(--tint);
+      color: var(--ink);
+    }
+    img, svg { display: block; max-width: 100%; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      padding: 1.1rem 1.5rem;
+      background: var(--white);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .logo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+      color: var(--ink);
+    }
+    .logo .dot { color: var(--red); }
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: var(--ink);
+      color: var(--white);
+      padding: 0.15rem 0.5rem;
+      border-radius: 5px;
+      margin-left: 0.6rem;
+      vertical-align: middle;
+    }
+    header .right { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; color: var(--slate); }
+    button.logout-btn {
+      cursor: pointer;
+      background: transparent;
+      color: var(--red);
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.83rem;
+      font-weight: 600;
+      font-family: var(--font-body);
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    button.logout-btn:hover { background: var(--red); color: var(--white); }
+
+    main { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem 3.5rem; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.75rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .toolbar h1 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .toolbar p { color: var(--slate); font-size: 0.88rem; margin-top: 0.15rem; }
+
+    button.btn {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 0.65rem 1.15rem;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+    }
+    button.btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--blue); color: var(--white); }
+    .btn-primary:hover { background: var(--blue-dark); }
+
+    /* ---------- Product grid ---------- */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 2.5rem 2rem;
+      align-items: stretch;
+    }
+    .product-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 1px 2px rgba(11, 18, 32, 0.04);
+      transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .product-card:hover {
+      border-color: var(--blue);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(11, 18, 32, 0.1);
+    }
+    .product-thumb {
+      position: relative;
+      width: 100%;
+      height: 170px;
+      flex-shrink: 0;
+      background: var(--tint);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+    }
+    .product-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .product-thumb svg { width: 30%; height: 30%; color: var(--blue); opacity: 0.5; }
+
+    .stock-line {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--slate);
+      display: block;
+    }
+    .stock-line.low,
+    .stock-line.out { color: var(--red); }
+
+    .product-body {
+      padding: 1rem 1.1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      flex: 1;
+    }
+    .product-body h3 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .product-body p.desc {
+      font-size: 0.83rem;
+      color: var(--slate);
+      line-height: 1.45;
+      flex-grow: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .product-price {
+      font-family: var(--font-mono);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--red);
+      border-top: 1px solid var(--line);
+      padding-top: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
+    }
+
+    .product-actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 0.3rem;
+    }
+    .icon-btn {
+      cursor: pointer;
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+      padding: 0.5rem 0.6rem;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: transparent;
+      border-radius: 8px;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .icon-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .icon-btn.edit { color: var(--blue); border: 1px solid var(--blue); }
+    .icon-btn.edit:hover { background: var(--blue); color: var(--white); }
+    .icon-btn.delete { color: var(--red); border: 1px solid var(--red); }
+    .icon-btn.delete:hover { background: var(--red); color: var(--white); }
+
+    #empty-state {
+      text-align: center;
+      padding: 3.5rem 1.5rem;
+      color: var(--slate);
+      background: var(--white);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+    }
+    #empty-state svg { width: 44px; height: 44px; color: var(--line); margin: 0 auto 1rem; }
+
+    /* ---------- Modal ---------- */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 18, 32, 0.5);
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 30;
+      overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      width: 100%;
+      max-width: 360px;
+      background: var(--white);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin: auto;
+    }
+    .modal h2 {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+    }
+    label { display: block; font-size: 0.72rem; font-weight: 600; margin-bottom: 0.2rem; }
+    input, textarea {
+      width: 100%;
+      padding: 0.45rem 0.6rem;
+      border: 1.5px solid var(--line);
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-family: var(--font-body);
+      margin-bottom: 0.65rem;
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--blue); }
+    textarea { resize: vertical; min-height: 44px; }
+    .image-preview {
+      width: 100%;
+      aspect-ratio: 21/9;
+      max-height: 110px;
+      background: var(--tint);
+      border-radius: 7px;
+      margin-bottom: 0.65rem;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px dashed var(--line);
+    }
+    .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .image-preview svg { width: 32px; height: 32px; color: var(--line); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.2rem; }
+    .modal-actions .btn { padding: 0.5rem 0.9rem; font-size: 0.85rem; }
+    .btn-outline { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+    .btn-outline:hover { background: var(--tint); }
+    #form-error {
+      display: none;
+      background: #fde8e8;
+      color: var(--red);
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      margin-bottom: 0.95rem;
+      border: 1px solid #f3c6c6;
+    }
+
+    /* ---------- Tablet ---------- */
+    @media (max-width: 900px) {
+      main { padding: 1.75rem 1.25rem 3rem; }
+      .product-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 2rem 1.25rem; }
+    }
+
+    /* ---------- Mobile (large) ---------- */
+    @media (max-width: 640px) {
+      header { padding: 0.9rem 1rem; }
+      .badge { display: none; }
+      header .right { gap: 0.6rem; }
+      header .right span { display: none; }
+
+      main { padding: 1.5rem 1rem 2.75rem; }
+
+      .toolbar { flex-direction: column; align-items: stretch; margin-bottom: 1.5rem; }
+      .toolbar h1 { font-size: 1.3rem; }
+      #add-btn { width: 100%; }
+
+      .product-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1.5rem 0.9rem; }
+      .product-body { padding: 0.8rem 0.85rem 0.9rem; gap: 0.5rem; }
+      .product-actions { flex-direction: column; gap: 0.4rem; }
+      .icon-btn span { display: none; }
+
+      .modal { max-width: 100%; max-height: 90vh; overflow-y: auto; padding: 1.1rem; }
+    }
+
+    /* ---------- Mobile (small) ---------- */
+    @media (max-width: 480px) {
+      .form-row { grid-template-columns: 1fr; }
+
+      .product-grid { grid-template-columns: 1fr 1fr; gap: 1.1rem 0.7rem; }
+      .product-thumb { height: 130px; }
+      .product-body h3 { font-size: 0.9rem; }
+      .product-price { font-size: 0.92rem; }
+    }
+
+    @media (max-width: 360px) {
+      .product-grid { grid-template-columns: 1fr; }
+      .product-thumb { height: 190px; }
+      .product-actions { flex-direction: row; }
+      .icon-btn span { display: inline; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <a class="logo" href="/">icart<span class="dot">.</span></a><span class="badge">Admin</span>
+    </div>
+    <div class="right">
+      <span>{adminEmail}</span>
+      <button class="logout-btn" id="logout-btn">Log out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div>
+        <h1>Product Management</h1>
+        <p>Add, edit, and remove items from the icart catalog.</p>
+      </div>
+      <button class="btn btn-primary" id="add-btn">+ Add product</button>
+    </div>
+
+    <div id="product-grid" class="product-grid"></div>
+    <div id="empty-state" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+      <p>No products yet. Click "Add product" to create your first one.</p>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h2 id="modal-title">Add Product</h2>
+      <div id="form-error"></div>
+      <form id="product-form">
+        <input type="hidden" id="product-id" />
+
+        <div class="image-preview" id="image-preview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+        </div>
+
+        <label for="imageUrl">Image URL (optional)</label>
+        <input id="imageUrl" placeholder="https://example.com/product.jpg" />
+
+        <label for="name">Name</label>
+        <input id="name" required maxlength="200" />
+
+        <label for="description">Description</label>
+        <textarea id="description" maxlength="2000"></textarea>
+
+        <div class="form-row">
+          <div>
+            <label for="price">Price</label>
+            <input id="price" type="number" step="0.01" min="0.01" required />
+          </div>
+          <div>
+            <label for="stock">Stock</label>
+            <input id="stock" type="number" step="1" min="0" required />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Trusted, static SVG strings only -- never built from user data, so innerHTML is safe here.
+    const PLACEHOLDER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="M21 15l-5-5L5 21"></path></svg>';
+    const EDIT_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+    const DELETE_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"></path><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"></path></svg>';
+
+    const grid = document.getElementById('product-grid');
+    const emptyState = document.getElementById('empty-state');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalTitle = document.getElementById('modal-title');
+    const form = document.getElementById('product-form');
+    const formError = document.getElementById('form-error');
+    const saveBtn = document.getElementById('save-btn');
+    const imagePreview = document.getElementById('image-preview');
+
+    const idField = document.getElementById('product-id');
+    const imageUrlField = document.getElementById('imageUrl');
+    const nameField = document.getElementById('name');
+    const descriptionField = document.getElementById('description');
+    const priceField = document.getElementById('price');
+    const stockField = document.getElementById('stock');
+
+    function updateImagePreview() {
+      const url = imageUrlField.value.trim();
+      imagePreview.innerHTML = '';
+      if (url) {
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = '';
+        img.addEventListener('error', () => { imagePreview.innerHTML = PLACEHOLDER_SVG; }, { once: true });
+        imagePreview.appendChild(img);
+      } else {
+        imagePreview.innerHTML = PLACEHOLDER_SVG;
+      }
+    }
+    imageUrlField.addEventListener('input', updateImagePreview);
+
+    function buildThumb(product) {
+      const thumb = document.createElement('div');
+      thumb.className = 'product-thumb';
+      if (product.imageUrl) {
+        const img = document.createElement('img');
+        img.src = product.imageUrl;
+        img.alt = product.name;
+        img.addEventListener('error', () => { thumb.innerHTML = PLACEHOLDER_SVG; }, { once: true });
+        thumb.appendChild(img);
+      } else {
+        thumb.innerHTML = PLACEHOLDER_SVG;
+      }
+      return thumb;
+    }
+
+    function buildStockLine(stock) {
+      const line = document.createElement('span');
+      let state = '';
+      let text = stock + ' in stock';
+      if (stock <= 0) {
+        state = 'out';
+        text = 'Out of stock';
+      } else if (stock <= 5) {
+        state = 'low';
+        text = 'Only ' + stock + ' left';
+      }
+      line.className = 'stock-line' + (state ? ' ' + state : '');
+      line.textContent = text;
+      return line;
+    }
+
+    function buildProductCard(product) {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.appendChild(buildThumb(product));
+
+      const body = document.createElement('div');
+      body.className = 'product-body';
+
+      const h3 = document.createElement('h3');
+      h3.textContent = product.name;
+      body.appendChild(h3);
+
+      const desc = document.createElement('p');
+      desc.className = 'desc';
+      desc.textContent = product.description || 'No description';
+      body.appendChild(desc);
+
+      const price = document.createElement('div');
+      price.className = 'product-price';
+      const priceAmount = document.createElement('span');
+      priceAmount.textContent = '$' + product.price.toFixed(2);
+      price.appendChild(priceAmount);
+      price.appendChild(buildStockLine(product.stock));
+      body.appendChild(price);
+
+      const actions = document.createElement('div');
+      actions.className = 'product-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'icon-btn edit';
+      editBtn.innerHTML = EDIT_ICON_SVG + '<span>Edit</span>';
+      editBtn.addEventListener('click', () => openModal('edit', product));
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'icon-btn delete';
+      deleteBtn.innerHTML = DELETE_ICON_SVG + '<span>Delete</span>';
+      deleteBtn.addEventListener('click', () => deleteProduct(product.id));
+
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+      body.appendChild(actions);
+
+      card.appendChild(body);
+      return card;
+    }
+
+    function openModal(mode, product) {
+      formError.style.display = 'none';
+      form.reset();
+      if (mode === 'edit' && product) {
+        modalTitle.textContent = 'Edit Product';
+        idField.value = product.id;
+        nameField.value = product.name;
+        descriptionField.value = product.description;
+        priceField.value = product.price;
+        stockField.value = product.stock;
+        imageUrlField.value = product.imageUrl || '';
+      } else {
+        modalTitle.textContent = 'Add Product';
+        idField.value = '';
+      }
+      updateImagePreview();
+      modalOverlay.classList.add('open');
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('open');
+    }
+
+    async function loadProducts() {
+      const res = await fetch('/api/products');
+      const products = await res.json();
+      renderProducts(products);
+    }
+
+    function renderProducts(products) {
+      grid.innerHTML = '';
+      emptyState.hidden = products.length > 0;
+      for (const p of products) {
+        grid.appendChild(buildProductCard(p));
+      }
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm('Delete this product? This cannot be undone.')) return;
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || 'Failed to delete product.');
+        return;
+      }
+      await loadProducts();
+    }
+
+    document.getElementById('add-btn').addEventListener('click', () => openModal('add'));
+    document.getElementById('cancel-btn').addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      formError.style.display = 'none';
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+
+      const payload = {
+        name: nameField.value,
+        description: descriptionField.value,
+        price: parseFloat(priceField.value),
+        stock: parseInt(stockField.value, 10),
+        imageUrl: imageUrlField.value.trim()
+      };
+
+      const id = idField.value;
+      const url = id ? `/api/products/${id}` : '/api/products';
+      const method = id ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          formError.textContent = data.message || 'Failed to save product.';
+          formError.style.display = 'block';
+          return;
+        }
+
+        closeModal();
+        await loadProducts();
+      } catch (err) {
+        formError.textContent = 'Something went wrong. Please try again.';
+        formError.style.display = 'block';
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await fetch('/api/admin/auth/logout', { method: 'POST' });
+      window.location.href = '/admin/login';
+    });
+
+    loadProducts();
+  </script>
+</body>
+</html>

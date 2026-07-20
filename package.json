@@ -1,0 +1,37 @@
+{
+  "name": "icart",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "seed:admin": "tsx scripts/seedAdmin.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@astrojs/node": "^11.0.2",
+    "@astrojs/vercel": "^11.0.2",
+    "astro": "^7.0.6",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "ioredis": "^5.11.1",
+    "pg": "^8.22.0",
+    "unstorage": "^1.17.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/pg": "^8.20.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "tsx": "^4.23.0",
+    "vitest": "^4.1.10"
+  }
+}
